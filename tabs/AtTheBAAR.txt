@@ -1,0 +1,71 @@
+[verse 1]
+      D                                    G                        D                           A
+I got paged at 3 this morning. Jolted from sleep without warning. I felt like I'd been hit by a car.
+            D                                 G                          D             A           D
+But there's no more time for rest. Got to log on and do my best. There's time to sleep *after* the BAAR.
+
+[chorus]
+       G            D                                          A
+At the BAAR, at the BAAR. Time to look around and see where we are.
+       D              D7               G                Em            D          A           D
+We can learn from our mistakes and see what improvement takes. That's why we all come to the BAAR.
+
+[verse 2]
+          D                               G                              D                           A
+I've been at this thing all night, but it still isn't quite right. These batches are running slow as tar.
+         D                          G                            D                A                D
+Now I've got an empty belly, and my office chair is smelly. Good thing no one can smell you at the BAAR.
+
+[chorus]
+       G            D                                          A
+At the BAAR, at the BAAR. Time to look around and see where we are.
+       D              D7               G                Em            D          A           D
+We can learn from our mistakes and see what improvement takes. That's why we all come to the BAAR.
+
+[verse 3]
+            D                                  G                           D                               A
+What's that smoke off in the distance? Is it a melting compute instance? I can't tell what it is from this far.
+        D                           G                               D             A          D
+Is it a glorious funeral pyre, or a smoldering dumpster fire? We'll get it sorted out at the BAAR.
+
+[chorus]
+       G            D                                          A
+At the BAAR, at the BAAR. Time to look around and see where we are.
+       D              D7               G                Em            D          A           D
+We can learn from our mistakes and see what improvement takes. That's why we all come to the BAAR.
+
+[verse 4]
+       D                       G                               D                            A
+We can handle any case, or incident that we might face. If you think we're exaggerating, we are.
+          D                                       G                               D            A              D
+Though my command line chops are strong, they can sometimes turn out wrong. Let's talk about a runbook at the BAAR.
+
+[chorus]
+       G            D                                          A
+At the BAAR, at the BAAR. Time to look around and see where we are.
+       D              D7               G                Em            D          A           D
+We can learn from our mistakes and see what improvement takes. That's why we all come to the BAAR.
+
+[verse 5]
+       D                                  G                        D                       A
+I keep dealing with this crap, and I just want to take a nap. This is my most exhausted by far.
+        D                                G                                 D               A               D
+Crack a monster and pour it in, now I've got my second wind!  And now it's gone, could you carry me to the BAAR?
+
+[chorus]
+       G            D                                          A
+At the BAAR, at the BAAR. Time to look around and see where we are.
+       D              D7               G                Em            D          A           D
+We can learn from our mistakes and see what improvement takes. That's why we all come to the BAAR.
+
+[verse 6]
+          D                                    G                       D                                   A
+Once I've found my happy place, that's when it blows up in my face. At least I think that's how I got this scar.
+      D                                G                               D             A              D
+Every bug is an adventure, though my reaction should be censored. I'll tell you all about it at the BAAR.
+
+[final chorus]
+       G            D                                                  A
+At the BAAR, at the BAAR. If you look around, you'll see we've come so far.
+       D              D7               G                Em            D          A           D
+We can learn from our mistakes and see what improvement takes. That's why we all come to the BAAR.
