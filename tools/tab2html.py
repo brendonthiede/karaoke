@@ -5,7 +5,8 @@ so a literal column mapping lands mid-syllable. Each chord snaps to the nearest
 word start; two chords on one word put the second on a syllable break."""
 import re, sys, html
 
-CHORD = re.compile(r'^[A-G][#b]?[^/\s]*(?:/[A-G][#b]?)?$')
+CHORD = re.compile(r'^\(?[A-G][#b]?[^/\s()]*(?:/[A-G][#b]?)?\)?$')
+PAGE = re.compile(r'^\s*Page \d+/\d+\s*$')      # PDF export artifact
 SECTION = re.compile(r'^\s*\[(.+)\]\s*$')
 
 def is_chord_line(l):
@@ -17,6 +18,8 @@ def is_blank(l):
 
 def span(c):
     return f'<span class="chord">[{html.escape(c)}]</span>'
+
+GAP = re.compile(r' {2,}')
 
 REVIEW = []
 
@@ -71,7 +74,7 @@ def merge(chord_line, lyric, lineno=0):
         out = out[:p] + span(ch) + out[p:]
     for ch in past:
         out += ' &nbsp; ' + span(ch)
-    return out.strip()
+    return GAP.sub('&nbsp;&nbsp;', out.strip())
 
 def convert(lines):
     out, i = [], 0
@@ -178,7 +181,8 @@ if len(sys.argv) != 5:
              '  e.g. tab2html.py tabs/Song.txt tabs/Song.html "Song" "Song - Artist"')
 
 src, dst, title, heading = sys.argv[1:5]
-lines = open(src, encoding='utf-8').read().split('\n')
+lines = [l for l in open(src, encoding='utf-8').read().split('\n')
+         if not PAGE.match(l)]
 items = convert(lines)
 open(dst, 'w', encoding='utf-8').write(render(items, title, heading))
 
