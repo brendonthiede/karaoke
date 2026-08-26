@@ -20,7 +20,10 @@ class CustomRequestHandler(SimpleHTTPRequestHandler):
             return super().do_GET()
 
 if __name__ == '__main__':
-    print('Starting server at http://localhost:8000')
-    addr = ('', 8000)
-    server = HTTPServer(addr, CustomRequestHandler)
+    try:
+        server = HTTPServer(('', 8000), CustomRequestHandler)
+    except OSError:
+        # Port 0 lets the OS pick any free port.
+        server = HTTPServer(('', 0), CustomRequestHandler)
+    print('Starting server at http://localhost:{}'.format(server.server_port))
     server.serve_forever()
