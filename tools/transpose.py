@@ -5,6 +5,8 @@ IDX = {n:i for i,n in enumerate(SHARPS)}
 IDX.update({'Bb':1,'Db':4,'Eb':6,'Gb':9,'Ab':11,'Cb':11,'Fb':4,'E#':7,'B#':3})
 
 CHORD = re.compile(r'^([A-G][#b]?)([^/\s]*)(?:/([A-G][#b]?))?$')
+# bar-line and repeat markers ride along untouched: `| B | B | G#m | x2`
+PASS = re.compile(r'\|+|[xX]\d+')
 
 def shift(note, steps):
     return SHARPS[(IDX[note] + steps) % 12]
@@ -21,13 +23,14 @@ def transpose_chord(tok, steps):
 
 def is_chord_line(line):
     toks = line.split()
-    return bool(toks) and all(transpose_chord(t, 0) for t in toks)
+    return bool(toks) and all(PASS.fullmatch(t) or transpose_chord(t, 0) for t in toks)
 
 def transpose_line(line, steps):
     # keep each chord at its original column; nudge right only to avoid collision
     out = ''
     for m in re.finditer(r'\S+', line):
-        new = transpose_chord(m.group(), steps)
+        tok = m.group()
+        new = tok if PASS.fullmatch(tok) else transpose_chord(tok, steps)
         col = max(m.start(), len(out) + 1 if out else 0)
         out += ' ' * (col - len(out)) + new
     return out
@@ -46,8 +49,8 @@ for ln in lines:
 open(sys.argv[2], 'w', encoding='utf-8').write('\n'.join(res))
 
 # self-check: chord count preserved, every chord moved by `steps`
-src = [t for ln in lines if is_chord_line(ln) for t in ln.split()]
-dst = [t for ln in res if is_chord_line(ln) for t in ln.split()]
+src = [t for ln in lines if is_chord_line(ln) for t in ln.split() if not PASS.fullmatch(t)]
+dst = [t for ln in res if is_chord_line(ln) for t in ln.split() if not PASS.fullmatch(t)]
 assert len(src) == len(dst), f'lost chords: {len(src)} -> {len(dst)}'
 for a, b in zip(src, dst):
     assert transpose_chord(a, steps) == b, f'{a} -> {b}'

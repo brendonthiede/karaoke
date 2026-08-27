@@ -8,10 +8,11 @@ import re, sys, html
 CHORD = re.compile(r'^\(?[A-G][#b]?[^/\s()]*(?:/[A-G][#b]?)?\)?$')
 PAGE = re.compile(r'^\s*Page \d+/\d+\s*$')      # PDF export artifact
 SECTION = re.compile(r'^\s*\[(.+)\]\s*$')
+PASS = re.compile(r'\|+|[xX]\d+')             # bar lines and repeat markers: `| E | E | x2`
 
 def is_chord_line(l):
     t = l.split()
-    return bool(t) and all(CHORD.match(x) for x in t)
+    return bool(t) and all(PASS.fullmatch(x) or CHORD.match(x) for x in t)
 
 def is_blank(l):
     return not l.strip()
@@ -119,7 +120,10 @@ def render(items, title, heading):
             if prev == 'line':
                 cur.append('                    <br>')
             cur.append(f'                    {val}')
-        prev = kind
+        # a blank line between two lyrics still needs its <br>: columns are split by
+        # section headers, not by blanks, so don't let one swallow the break
+        if kind != 'break':
+            prev = kind
     flush()
     return TEMPLATE.format(title=html.escape(title), heading=html.escape(heading),
                            body='\n'.join(body))
