@@ -100,11 +100,18 @@ a.pure-button-primary {
     background: #2d3e50;
 }
 
+/* The header sticks instead of being `position: fixed`, so it keeps its space in
+   the flow and the content below can never slide under it at any font size. */
+.header {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+}
+
 .pure-menu.pure-menu-fixed {
+    position: static;
     /* Fixed menus normally have a border at the bottom. */
     border-bottom: none;
-    /* I need a higher z-index here because of the scroll-over effect. */
-    z-index: 4;
 }
 
 .home-menu .pure-menu-heading {
@@ -184,8 +191,6 @@ a.pure-button-primary {
  * This represents the content area (everything below the blue section)
  */
 .content-wrapper {
-    /* These styles are required for the "scroll-over" effect */
-    margin-top: 54px;
     width: 100%;
     min-height: 12%;
     z-index: 2;
@@ -305,4 +310,11 @@ pre.chord {
 .chord {
     color: darkblue;
     font-weight: bold;
+}
+
+/* `.section` is `display: block` in the tabs, which would kill the disclosure
+   triangle on a collapsed repeat. See scripts/repeats.js. */
+summary.section {
+    display: list-item;
+    cursor: pointer;
 }
