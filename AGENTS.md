@@ -12,7 +12,7 @@ served straight from disk (`python3 -m http.server`, see README).
 | `tabs/` | Chord charts: `.html` (rendered tab), `.txt`/`.tab` (chord-over-lyric source). |
 | `media/` | Local karaoke video files. |
 | `tools/` | Python converters (see below). Not served — dev-time only. |
-| `scripts/` | Browser JS: `wakelock.js`, `enableToggleChords.js`. |
+| `scripts/` | Browser JS: `wakelock.js`, `enableToggleChords.js`, `repeats.js`, `fitscreen.js`. |
 | `*.css` | Pure.css + Font Awesome, vendored. `style.css` is ours. |
 
 ## Adding a song
@@ -55,6 +55,25 @@ I will <span class="chord">[D]</span>sing of the <span class="chord">[E]</span>g
 `<span class="section">Verse 1</span>`. `.container` is `column-count: 2` with
 `break-inside: avoid-column` on each `.column`, so sections don't split across
 columns.
+
+## Full screen mode
+
+`scripts/fitscreen.js` adds a "Full screen" link to a tab's header. It hides the
+page chrome and searches font size against one, two and three columns for the
+largest readable size where the whole song fits with no overflow, then remembers
+your `+`/`-` nudges per song as a step offset from that fit (never an absolute
+px size, so the same offset holds in portrait, landscape and on a laptop).
+
+Wired into the four newest tabs only. Any other tab gets it with one line:
+
+```html
+<script src="../scripts/fitscreen.js"></script>
+```
+
+It needs `<div id="song">` and finds the header menu itself. The `<meta
+name="apple-mobile-web-app-capable">` tags exist so Add to Home Screen on iOS
+launches chrome-free — iPadOS Safari won't fullscreen a non-video element, so
+that's the only way to actually lose the address bar there.
 
 ## tools/
 
