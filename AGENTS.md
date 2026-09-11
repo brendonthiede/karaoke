@@ -160,7 +160,7 @@ instead of proofreading the whole song.
 ## Generated tabs get hand-edited — check before regenerating
 
 This applies to the 20 older static `.html` tabs (everything not yet a `.cho`).
-`tabs/GoodnessOfGod.html` was generated, then edited by hand: different chord
+`tabs/GoodnessOfGod.cho` was generated, then edited by hand: different chord
 voicings (`D/A`, `Esus`), a changed word, and repeated sections collapsed to
 `(repeat)`. None of that is in `tabs/GoodnessOfGod.txt`.
 
