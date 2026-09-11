@@ -7,7 +7,7 @@
     if (!song) return;
 
     const MIN = 9, MAX = 72, STEP = 1.1;
-    const KEY = `fitscreen:${location.pathname}`;
+    const KEY = `fitscreen:${location.pathname}${location.search}`;
 
     // Candidate sizes, on the same 10% rungs the +/- buttons walk.
     const SIZES = [];

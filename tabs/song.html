@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Song</title>
+    <link rel="stylesheet" href="../pure.css">
+    <link rel="stylesheet" href="../grids-responsive.css">
+    <link rel="stylesheet" href="../font-awesome.css">
+    <link rel="stylesheet" href="../style.css">
+    <link rel="icon" href="../favicon.ico">
+    <style>
+        .container {
+            column-count: 2;
+        }
+
+        .column {
+            break-inside: avoid-column;
+            margin-bottom: 1em;
+        }
+
+        .section {
+            font-weight: bold;
+            font-style: italic;
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
+            <a class="pure-menu-heading" href=""></a>
+            <ul class="pure-menu-list">
+                <li class="pure-menu-item pure-menu-selected"><a href="../index.html" class="pure-menu-link">Home</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div class="content-wrapper">
+        <div class="content">
+            <div id="song" class="container"></div>
+            <p hidden><small id="credits"></small></p>
+        </div>
+    </div>
+    <!-- song.js last: fitscreen.js adds its menu link first. -->
+    <script src="../scripts/wakelock.js"></script>
+    <script src="../scripts/fitscreen.js"></script>
+    <script src="../scripts/song.js"></script>
+</body>
+
+</html>

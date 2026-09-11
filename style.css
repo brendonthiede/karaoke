@@ -317,7 +317,7 @@ pre.chord {
 }
 
 /* `.section` is `display: block` in the tabs, which would kill the disclosure
-   triangle on a collapsed repeat. See scripts/repeats.js. */
+   triangle on a collapsed repeat. See fillRepeats in scripts/song.js. */
 summary.section {
     display: list-item;
     cursor: pointer;
@@ -334,6 +334,16 @@ summary.section {
 .home-menu.pure-menu-horizontal,
 .home-menu .pure-menu-heading {
     white-space: normal;
+}
+
+/* Key picker added by scripts/song.js, dressed like the menu links around it. */
+#key {
+    background: #2d3e50;
+    color: #6FBEF3;
+    border: none;
+    font: inherit;
+    padding: 0.5em 0.25em;
+    cursor: pointer;
 }
 
 body.fitscreen .header {
@@ -387,7 +397,8 @@ body.fitscreen #fitscreen-controls {
 @media print {
 
     #fitscreen-controls,
-    #fitscreen-enter {
+    #fitscreen-enter,
+    #key {
         display: none;
     }
 }
