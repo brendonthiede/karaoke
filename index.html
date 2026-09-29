@@ -324,11 +324,49 @@
                         <td><a href="./tabs/song.html?s=WhatABeautifulName">Local</a>
                         </td>
                     </tr>
+                    <tr>
+                        <td>One Thing Remains</td>
+                        <td>Johnson/Riddle/Black-Gifford</td>
+                        <td>&mdash;</td>
+                        <td><a href="./tabs/song.html?s=OneThingRemains">Local</a>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
     </div>
     <script src="./scripts/wakelock.js"></script>
+    <script>
+        // Playlist picker: tick .cho songs, Play opens them in tick order (see AGENTS.md).
+        (() => {
+            const picked = [];
+            const li = document.createElement("li");
+            li.className = "pure-menu-item";
+            li.hidden = true;
+            const play = document.createElement("a");
+            play.className = "pure-menu-link";
+            li.append(play);
+            document.querySelector(".pure-menu-list").append(li);
+            const update = () => {
+                li.hidden = !picked.length;
+                play.textContent = `Play (${picked.length})`;
+                play.href = `./tabs/song.html?s=${picked[0]}&p=${picked.join(",")}`;
+            };
+            for (const row of document.querySelectorAll("tbody tr")) {
+                const m = /song\.html\?s=([\w-]+)/.exec(row.querySelector("td:last-child a")?.href || "");
+                if (!m) continue;
+                const box = document.createElement("input");
+                box.type = "checkbox";
+                box.title = "Add to playlist";
+                box.addEventListener("change", () => {
+                    if (box.checked) picked.push(m[1]);
+                    else picked.splice(picked.indexOf(m[1]), 1);
+                    update();
+                });
+                row.cells[0].prepend(box, " ");
+            }
+        })();
+    </script>
 </body>
 
 </html>
