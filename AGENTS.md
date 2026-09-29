@@ -93,6 +93,13 @@ play; the picker is for the day someone else sings it.
 Do not pass `?key=` in links; there is no such parameter. Add one to `song.js`
 if a pinned-key link is ever needed.
 
+**Playlist mode.** `song.html?s=B&p=A,B,C` adds Prev/Next (header links, arrow
+keys, and a pair in the full-screen controls) that step through `A`, `B`, `C` in
+place: the next `.cho` is fetched and re-rendered without a page load, so full
+screen survives. The URL is the whole state. `index.html` builds it: a checkbox
+on every `.cho` row, and a "Play (n)" menu link that opens them in tick order.
+Only `.cho` songs can be in a playlist; convert a static tab first.
+
 ## Full screen mode
 
 `scripts/fitscreen.js` adds a "Full screen" link to a tab's header. It hides the

@@ -1,7 +1,7 @@
 // node tools/song_check.js — the smallest checks that fail if scripts/song.js parsing or
 // transposing breaks. No DOM needed: song.js exports its pure functions under node.
 const assert = require("assert");
-const { parse, transposeChord, isChordLine } = require("../scripts/song.js");
+const { parse, transposeChord, isChordLine, playlist } = require("../scripts/song.js");
 
 // chord-line detection
 assert.ok(isChordLine("| E    | E    | A    | B    |"));
@@ -35,4 +35,9 @@ assert.strictEqual(transposeChord("(A)", 2, false), "(B)");
 assert.strictEqual(transposeChord("Dbsus4", -1, false), "Csus4");
 assert.strictEqual(transposeChord("Gbmaj7/Bb", 5, true), "Bmaj7/Eb");
 assert.strictEqual(transposeChord("x2", 5, true), "x2");
+
+// playlist URL
+assert.deepStrictEqual(playlist("?s=B&p=A,B,C"), { list: ["A", "B", "C"], at: 1 });
+assert.deepStrictEqual(playlist("?s=B&p=A,../x,B,B"), { list: ["A", "B"], at: 1 }, "bad and duplicate names dropped");
+assert.deepStrictEqual(playlist("?s=A"), { list: [], at: -1 });
 console.log("ok");

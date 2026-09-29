@@ -48,13 +48,20 @@
         return { meta, blocks };
     }
 
-    if (typeof module !== "undefined") module.exports = { parse, transposeChord, isChordLine };
+    // ?s=B&p=A,B,C → { list: ["A","B","C"], at: 1 }. Bad names dropped, missing p → [].
+    function playlist(search) {
+        const q = new URLSearchParams(search);
+        const list = [...new Set((q.get("p") || "").split(",").filter((n) => /^[\w-]+$/.test(n)))];
+        return { list, at: list.indexOf(q.get("s") || "") };
+    }
+
+    if (typeof module !== "undefined") module.exports = { parse, transposeChord, isChordLine, playlist };
     if (typeof document === "undefined") return;
 
     /* ---------- DOM ---------- */
 
     const song = document.getElementById("song");
-    const name = new URLSearchParams(location.search).get("s") || "";
+    let name = "", list = [], at = -1;
     const el = (tag, cls, text) => {
         const e = document.createElement(tag);
         if (cls) e.className = cls;
@@ -162,24 +169,102 @@
         apply();
     }
 
-    if (!/^[\w-]+$/.test(name)) {
-        song.textContent = "No song given: open this page as song.html?s=SongName";
-        return;
+    let loads = 0;
+    function load() {
+        const mine = ++loads;   // a slower fetch from an earlier Next must not land on top of this one
+        name = new URLSearchParams(location.search).get("s") || "";
+        ({ list, at } = playlist(location.search));
+        updateNav();
+        document.getElementById("key")?.closest("li").remove();
+        const small = document.getElementById("credits");
+        small.parentElement.hidden = true;
+        if (!/^[\w-]+$/.test(name)) {
+            song.textContent = "No song given: open this page as song.html?s=SongName";
+            return;
+        }
+        fetch(`${name}.cho`, { cache: "no-cache" })
+            .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`))))
+            .then((text) => {
+                if (mine !== loads) return;
+                const model = parse(text);
+                const { title = name, artist, key, credits } = model.meta;
+                document.title = title;
+                document.querySelector(".pure-menu-heading").textContent = artist ? `${title} - ${artist}` : title;
+                if (credits) {
+                    small.textContent = credits;
+                    small.parentElement.hidden = false;
+                }
+                render(model, 0, false);
+                if (key) addKeyPicker(key, (steps, flats) => render(model, steps, flats));
+            })
+            .catch((err) => { if (mine === loads) song.textContent = `Could not load ${name}.cho (${err.message})`; })
+            .finally(() => { if (mine === loads) document.dispatchEvent(new Event("songchange")); });
     }
-    fetch(`${name}.cho`, { cache: "no-cache" })
-        .then((r) => (r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`))))
-        .then((text) => {
-            const model = parse(text);
-            const { title = name, artist, key, credits } = model.meta;
-            document.title = title;
-            document.querySelector(".pure-menu-heading").textContent = artist ? `${title} - ${artist}` : title;
-            if (credits) {
-                const small = document.getElementById("credits");
-                small.textContent = credits;
-                small.parentElement.hidden = false;
-            }
-            render(model, 0, false);
-            if (key) addKeyPicker(key, (steps, flats) => render(model, steps, flats));
-        })
-        .catch((err) => { song.textContent = `Could not load ${name}.cho (${err.message})`; });
+
+    /* ---------- playlist ---------- */
+
+    // song.html?s=B&p=A,B,C steps through A, B, C in place: the URL is the whole state,
+    // so refresh, bookmark and back/forward keep the position.
+    const nav = [];   // [element, delta] pairs to enable/disable at the ends
+    let pos;
+    function go(delta) {
+        const to = at + delta;
+        if (to < 0 || to >= list.length) return;
+        history.pushState(null, "", `?s=${list[to]}&p=${list.join(",")}`);
+        load();
+    }
+    function updateNav() {
+        if (!pos) return;
+        pos.textContent = `${at + 1} / ${list.length}`;
+        for (const [node, delta] of nav) {
+            const off = at + delta < 0 || at + delta >= list.length;
+            if (node.tagName === "BUTTON") node.disabled = off;
+            else node.classList.toggle("pure-menu-disabled", off);
+        }
+    }
+    (function addNav() {
+        const { list, at } = playlist(location.search);
+        const menu = document.querySelector(".pure-menu-list");
+        if (list.length < 2 || at < 0 || !menu) return;
+        const item = (label, title, delta) => {
+            const li = el("li", "pure-menu-item");
+            const a = el("a", "pure-menu-link", label);
+            a.href = "#";
+            a.title = title;
+            a.addEventListener("click", (e) => { e.preventDefault(); go(delta); });
+            li.append(a);
+            nav.push([li, delta]);
+            return li;
+        };
+        const posItem = el("li", "pure-menu-item");
+        pos = el("span", "pure-menu-link");
+        posItem.append(pos);
+        menu.append(item("‹ Prev", "Previous song", -1), posItem, item("Next ›", "Next song", 1));
+
+        // The fullscreen control cluster hides the header, so it gets its own pair.
+        const controls = document.getElementById("fitscreen-controls");
+        if (controls) {
+            const button = (label, title, delta) => {
+                const b = el("button", null, label);
+                b.type = "button";
+                b.title = title;
+                b.setAttribute("aria-label", title);
+                b.addEventListener("click", () => go(delta));
+                nav.push([b, delta]);
+                return b;
+            };
+            controls.prepend(button("‹", "Previous song", -1), button("›", "Next song", 1));
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if (/^(SELECT|INPUT)$/.test(e.target.tagName)) return;   // the key picker keeps its arrows
+            if (e.key === "ArrowLeft") go(-1);
+            else if (e.key === "ArrowRight") go(1);
+            else return;
+            e.preventDefault();
+        });
+        window.addEventListener("popstate", load);
+    })();
+
+    load();
 })();

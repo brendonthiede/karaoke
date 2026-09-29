@@ -7,7 +7,12 @@
     if (!song) return;
 
     const MIN = 9, MAX = 72, STEP = 1.1;
-    const KEY = `fitscreen:${location.pathname}${location.search}`;
+    // Keyed on the song, not the whole query string, so a chart's zoom is the same
+    // whether it was opened alone or from a playlist (?p=...).
+    const key = () => {
+        const s = new URLSearchParams(location.search).get("s");
+        return `fitscreen:${location.pathname}${s ? `?s=${s}` : location.search}`;
+    };
 
     // Candidate sizes, on the same 10% rungs the +/- buttons walk.
     const SIZES = [];
@@ -17,12 +22,12 @@
     // and a dead zoom button is a worse outcome than a forgotten one.
     const remember = (value) => {
         try {
-            if (value === null) localStorage.removeItem(KEY);
-            else localStorage.setItem(KEY, value);
+            if (value === null) localStorage.removeItem(key());
+            else localStorage.setItem(key(), value);
         } catch { /* not remembered, but the session still works */ }
     };
     const remembered = () => {
-        try { return Number(localStorage.getItem(KEY)) || 0; } catch { return 0; }
+        try { return Number(localStorage.getItem(key())) || 0; } catch { return 0; }
     };
 
     let offset = remembered();
@@ -210,6 +215,12 @@
             if (!real && isOn()) leave();
         });
     }
+
+    // song.js swapped in another chart (playlist Next/Prev): its own zoom, refit.
+    document.addEventListener("songchange", () => {
+        offset = remembered();
+        if (isOn()) fit();
+    });
 
     let pending;
     window.addEventListener("resize", () => {
