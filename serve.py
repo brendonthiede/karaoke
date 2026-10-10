@@ -1,4 +1,4 @@
-from http.server import SimpleHTTPRequestHandler, HTTPServer
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 class CustomRequestHandler(SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -21,9 +21,9 @@ class CustomRequestHandler(SimpleHTTPRequestHandler):
 
 if __name__ == '__main__':
     try:
-        server = HTTPServer(('', 8000), CustomRequestHandler)
+        server = ThreadingHTTPServer(('', 8000), CustomRequestHandler)
     except OSError:
         # Port 0 lets the OS pick any free port.
-        server = HTTPServer(('', 0), CustomRequestHandler)
+        server = ThreadingHTTPServer(('', 0), CustomRequestHandler)
     print('Starting server at http://localhost:{}'.format(server.server_port))
     server.serve_forever()
