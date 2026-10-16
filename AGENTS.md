@@ -11,6 +11,7 @@ served straight from disk (`python3 -m http.server`, see README).
 | `christmas.html` | Second playlist, same table format. |
 | `tabs/` | Chord charts: `.cho` (song format, rendered by `song.html`), `.html` (older hand-written tabs), `.txt`/`.tab` (chord-over-lyric source). |
 | `media/` | Local karaoke video files. |
+| `icons/` | App icons (manifest, iOS home screen), all resized from `source.jpg`; `favicon.ico` is a 32px PNG cropped from it. |
 | `tools/` | Python converters (see below). Not served — dev-time only. |
 | `scripts/` | Browser JS: `song.js` (`.cho` renderer, repeats, key picker), `fitscreen.js`, `device.js` (screen wake lock + offline registration; every page loads it), `enableToggleChords.js`. |
 | `*.css` | Pure.css + Font Awesome, vendored. `style.css` is ours. |

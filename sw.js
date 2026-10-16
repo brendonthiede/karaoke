@@ -3,7 +3,8 @@
 // entry when a song is added. media/ is left out (large, and mostly not deployed).
 const CACHE = "karaoke";
 const SHELL = [
-    "./", "index.html", "christmas.html", "tabs/song.html",
+    "./", "index.html", "christmas.html", "tabs/song.html", "manifest.webmanifest", "icons/apple-touch-icon.png",
+    "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png",
     "pure.css", "grids-responsive.css", "font-awesome.css", "style.css", "favicon.ico",
     "scripts/song.js", "scripts/fitscreen.js", "scripts/device.js", "scripts/enableToggleChords.js",
 ];
