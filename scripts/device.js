@@ -1,3 +1,7 @@
+// Loaded by every page. Keeps the device usable for a whole set: the screen stays
+// awake, and the site keeps working if Wi-Fi drops (sw.js).
+
+// --- Screen wake lock ---
 let wakeLock = null;
 
 function isScreenLockSupported() {
@@ -24,4 +28,9 @@ if (isScreenLockSupported()) {
     requestWakeLock();
 } else {
     console.log('Screen wake lock is not supported');
+}
+
+// --- Offline (service worker) ---
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register(new URL('../sw.js', document.currentScript.src));
 }

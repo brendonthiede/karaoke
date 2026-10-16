@@ -12,7 +12,7 @@ served straight from disk (`python3 -m http.server`, see README).
 | `tabs/` | Chord charts: `.cho` (song format, rendered by `song.html`), `.html` (older hand-written tabs), `.txt`/`.tab` (chord-over-lyric source). |
 | `media/` | Local karaoke video files. |
 | `tools/` | Python converters (see below). Not served — dev-time only. |
-| `scripts/` | Browser JS: `song.js` (`.cho` renderer, repeats, key picker), `fitscreen.js`, `wakelock.js`, `enableToggleChords.js`. |
+| `scripts/` | Browser JS: `song.js` (`.cho` renderer, repeats, key picker), `fitscreen.js`, `device.js` (screen wake lock + offline registration; every page loads it), `enableToggleChords.js`. |
 | `*.css` | Pure.css + Font Awesome, vendored. `style.css` is ours. |
 
 ## Adding a song
@@ -118,6 +118,16 @@ It needs `<div id="song">` and finds the header menu itself. The `<meta
 name="apple-mobile-web-app-capable">` tags exist so Add to Home Screen on iOS
 launches chrome-free — iPadOS Safari won't fullscreen a non-video element, so
 that's the only way to actually lose the address bar there.
+
+## Offline
+
+`sw.js` is a network-first service worker, registered from `scripts/device.js`
+(every page loads it, so a new tab must too). On install, and again whenever the index opens online, it
+crawls the `./tabs/…` links in `index.html` and `christmas.html` and caches each
+one (`song.html?s=Name` → `Name.cho`). A new song only needs its row; nothing in
+`sw.js` changes. Shared CSS/JS live in its `SHELL` list. Add a new one there.
+`media/` is never cached. Service workers need HTTPS or localhost, so offline
+does not work over `http://<lan-ip>`.
 
 ## tools/
 
