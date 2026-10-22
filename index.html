@@ -23,6 +23,7 @@
             <a class="pure-menu-heading" href="">Playlist</a>
             <ul class="pure-menu-list">
                 <li class="pure-menu-item pure-menu-selected"><a href="./index.html" class="pure-menu-link">Home</a></li>
+                <li class="pure-menu-item"><a href="./index.html?worship" class="pure-menu-link">Worship</a></li>
                 <li class="pure-menu-item"><a href="./christmas.html" class="pure-menu-link">Christmas</a></li>
             </ul>
         </div>
@@ -277,6 +278,8 @@
                         <td><a href="./tabs/AtTheBAAR.pdf">PDF</a>
                         </td>
                     </tr>
+                </tbody>
+                <tbody id="worship">
                     <tr>
                         <td>Better Is One Day</td>
                         <td>Matt Redman</td>
@@ -366,6 +369,15 @@
         </div>
     </div>
     <script src="./scripts/device.js"></script>
+    <script>
+        // ?worship shows only the second <tbody>; new worship songs go at its end.
+        if (new URLSearchParams(location.search).has("worship")) {
+            document.querySelector("tbody:not(#worship)").hidden = true;
+            const items = document.querySelectorAll(".pure-menu-item");
+            items[0].classList.remove("pure-menu-selected");
+            items[1].classList.add("pure-menu-selected");
+        }
+    </script>
     <script>
         // Playlist picker: tick .cho songs, Play opens them in tick order (see AGENTS.md).
         (() => {
