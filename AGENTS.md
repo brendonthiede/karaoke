@@ -13,7 +13,7 @@ served straight from disk (`python3 -m http.server`, see README).
 | `media/` | Local karaoke video files. |
 | `icons/` | App icons (manifest, iOS home screen), all resized from `source.jpg`; `favicon.ico` is a 32px PNG cropped from it. |
 | `tools/` | Python converters (see below). Not served — dev-time only. |
-| `scripts/` | Browser JS: `song.js` (`.cho` renderer, repeats, key picker), `fitscreen.js`, `device.js` (screen wake lock + offline registration; every page loads it), `enableToggleChords.js`. |
+| `scripts/` | Browser JS: `song.js` (`.cho` renderer, repeats, key picker), `timeline.js` + `autoscroll.js` (stage view, below), `fitscreen.js`, `device.js` (screen wake lock + offline registration; every page loads it), `enableToggleChords.js`. |
 | `*.css` | Pure.css + Font Awesome, vendored. `style.css` is ours. |
 
 ## Adding a song
@@ -71,7 +71,8 @@ Line rules, checked in this order:
 
 | Line | Meaning |
 |---|---|
-| `{name: value}` | `title`, `artist` (heading is `Title - Artist`), `key` (enables the key picker), `credits` (small footer line) |
+| `{name: value}` | `title`, `artist` (heading is `Title - Artist`), `key` (enables the key picker), `credits` (small footer line). Timing directives (`tempo`, `time`, `bars`, `hold`, …) are in `docs/autoscroll-plan.md`; `tempo`/`time`/`bars` after the first non-blank line, and every `{hold}`, are kept in place and never rendered |
+| `… {1}` at line end | this line lasts that many bars (`{0.5}` allowed); stripped before the rules below |
 | `# …` | comment, not rendered |
 | `[Name]` alone on a line | section header; starts a column with `id` = slug (`Chorus 3` → `chorus3`) |
 | `> Name` / `> Label = Name` | collapsed repeat of section `Name`, labelled `Label`; its own column |
@@ -120,6 +121,19 @@ name="apple-mobile-web-app-capable">` tags exist so Add to Home Screen on iOS
 launches chrome-free — iPadOS Safari won't fullscreen a non-video element, so
 that's the only way to actually lose the address bar there.
 
+## Autoscroll (stage view)
+
+A chart with `{tempo}` gets an "Autoscroll" menu link: one column, repeats and
+`x3` written out, scrolled by a beat clock so the current line sits on the now
+line a third of the way down. Play counts in one bar (big 1, 2, 3, 4) unless the
+chart says `{count: 0}` or another number. Design, directives and controls are in
+`docs/autoscroll-plan.md`. Keys: space play/pause, →/Page Down play, ←/Page Up
+pause, ↑/↓ nudge a line, Home restart, `t` ×4 tap tempo, `[`/`]` ∓2%, `+`/`-`
+size, Esc exit. Tap a line to sync there, tap a section name to jump there
+paused, drag to peek (the clock takes the view back 3 s later). While it is on,
+the arrows drive the clock, not Prev/Next song. Single device only for now; sync
+across devices is phase 3.
+
 ## Offline
 
 `sw.js` is a network-first service worker, registered from `scripts/device.js`
@@ -142,6 +156,10 @@ python3 tools/tab2html.py  <in.txt> <out.html> <title> <heading>
 python3 tools/transpose.py <in.txt> <out.txt> <semitones>
 node    tools/song_check.js
 ```
+
+`song_check.js` also covers `scripts/timeline.js` (beats, tempo map, holds for
+autoscroll). For a chart with `{tempo}`, `timeline(parse(text)).warnings` lists every
+chord line whose length can't be inferred and needs a `{n}`.
 
 `html2cho.py` converts a hand-written tab to the `.cho` format: a `.column` with
 no header becomes `---`, an HTML comment becomes `#` lines, `&nbsp;` becomes a

@@ -1,6 +1,10 @@
 # Autoscroll mode — plan
 
-Status: design settled 2026-10-11 after a grilling session; nothing implemented.
+Status: design settled 2026-10-11 after a grilling session. Phases 1 and 2 done
+2026-10-27: parser, `scripts/timeline.js`, `scripts/autoscroll.js`; Better Is One
+Day is the one timed chart. Directions (`(Acapella)`) take no time in the
+timeline and are not repeated by `x3`. The key picker sits in the header, which
+the stage view hides: pick the key before entering.
 Vocabulary is in `CONTEXT.md`. The decisions log at the end is the record of
 what was chosen and why; the body is the plan that follows from it.
 
@@ -82,7 +86,7 @@ All optional. Autoscroll is offered only when the chart has `{tempo}`.
 | `{time: 4/4}` | header or body | beats per bar from the next event on |
 | `{bars: 2}` | header or body | default bars per lyric line from here on (default 2) |
 | `{hold}` | body, own line | the clock stops before the next event until the leader resumes |
-| `{count: 1}` | header | count-in bars after play before the first event (default 0) |
+| `{count: 1}` | header | count-in bars after play before the first event (default 1; `{count: 0}` for none) |
 | `{lead: 1}` | header | house view flips to the next slide this many beats early (default 1) |
 | `… {1}` | end of a lyric or chord line | this line lasts 1 bar; fractions allowed (`{0.5}` for a pickup) |
 | `{tempo: 56 over 2}` | body | **later:** linear ramp over 2 bars |
@@ -172,8 +176,8 @@ Built on the existing render in `song.js`; same DOM, same key picker.
 - **Peek:** drag scrolls freely; the view snaps back to the clock 3 s after the
   finger lifts. Followers can peek too.
 - **Full screen** reuses the `fitscreen` chrome, wake lock, and control cluster.
-- **Opening a song** lands paused at beat 0. Play starts it, after `{count: n}`
-  bars of beat-dot flashes if set.
+- **Opening a song** lands paused at beat 0. Play starts it after a count-in,
+  one bar unless `{count: n}` says otherwise, shown as large beat numbers.
 
 ### Leader controls
 
@@ -340,3 +344,4 @@ From the grilling session of 2026-10-10/11. Settled; reopen only with a new entr
 29. **Chord-only line = one bar per cell only when every cell has one chord;** otherwise `{n}` required, console warns.
 30. **A blank line is also a slide break;** the gap in the static chart is accepted.
 31. **Play stays; Lead (n) is a separate link,** greyed until room set and all songs timed.
+32. **One-bar count-in by default** (2026-10-27, replaces the default in 14), numbers shown on screen; `{count: 0}` turns it off.

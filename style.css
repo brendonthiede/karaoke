@@ -394,10 +394,192 @@ body.fitscreen #fitscreen-controls {
     opacity: 1;
 }
 
+/*
+ * -- AUTOSCROLL (STAGE VIEW) STYLES --
+ * See scripts/autoscroll.js. Size and scroll are set from JS every frame; only
+ * classes on the line elements change, and only at line boundaries.
+ */
+
+body.autoscroll .header {
+    display: none;
+}
+
+body.autoscroll .content {
+    padding: 0 1em;
+}
+
+/* Room above the first line and below the last, so both can reach the now line. */
+body.autoscroll #song {
+    column-count: 1;
+    line-height: 1.5;
+    padding: 34vh 0 70vh;
+}
+
+.stage .line {
+    position: relative;
+    margin: 0;
+    padding-left: 0.9em;
+    transition: opacity 0.3s;
+}
+
+.stage pre.chord {
+    font-size: 100%;
+    white-space: pre;
+}
+
+.stage .gap {
+    margin-top: 0.6em;
+}
+
+.stage .section {
+    margin-top: 1em;
+    cursor: pointer;
+}
+
+.stage .direction {
+    font-style: italic;
+}
+
+.stage .past {
+    opacity: 0.5;
+}
+
+.stage .now {
+    background: rgba(31, 141, 214, 0.08);
+}
+
+.stage .flash {
+    animation: autoscroll-flash 0.6s;
+}
+
+@keyframes autoscroll-flash {
+    from {
+        background: rgba(31, 141, 214, 0.45);
+    }
+}
+
+/* Measuring the longest line for type size: no wrapping while it's measured. */
+#song.measuring .line {
+    white-space: nowrap;
+}
+
+#autoscroll-progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 3px;
+    background: #1f8dd6;
+    transform-origin: left;
+}
+
+#autoscroll-now,
+#autoscroll-status,
+#autoscroll-controls {
+    display: none;
+}
+
+#autoscroll-now {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 33.333vh;
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+    pointer-events: none;
+    z-index: 5;
+}
+
+body.autoscroll #autoscroll-now {
+    display: block;
+}
+
+#autoscroll-status {
+    position: fixed;
+    top: calc(0.4em + env(safe-area-inset-top, 0px));
+    left: 0.5em;
+    align-items: center;
+    gap: 0.6em;
+    padding: 0.2em 0.6em;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #34495e;
+    font-size: 16px;
+    line-height: 1.4;
+    z-index: 10;
+}
+
+/* Count-in numbers, over the empty space above the first line. */
+#autoscroll-count {
+    position: fixed;
+    left: 50%;
+    top: 4vh;
+    color: #1f8dd6;
+    font-size: 22vh;
+    font-weight: bold;
+    line-height: 1;
+    pointer-events: none;
+    z-index: 6;
+}
+
+#autoscroll-count:empty,
+body:not(.autoscroll) #autoscroll-count {
+    display: none;
+}
+
+body.autoscroll #autoscroll-status {
+    display: flex;
+}
+
+/* Sized in em so it scales with the stage type; centred with margins so the
+   per-frame transform is only the pulse. */
+#autoscroll-dot {
+    position: absolute;
+    left: 0.15em;
+    top: 50%;
+    width: 0.45em;
+    height: 0.45em;
+    margin-top: -0.225em;
+    border-radius: 50%;
+    background: #1f8dd6;
+}
+
+body.autoscroll #autoscroll-controls {
+    display: flex;
+}
+
+#autoscroll-controls {
+    position: fixed;
+    right: 0.5em;
+    bottom: calc(0.5em + env(safe-area-inset-bottom, 0px));
+    gap: 0.4em;
+    z-index: 10;
+}
+
+#autoscroll-controls button {
+    min-width: 44px;
+    height: 44px;
+    padding: 0 0.4em;
+    border: none;
+    border-radius: 8px;
+    background: #2d3e50;
+    color: white;
+    font-size: 18px;
+    line-height: 1;
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+#autoscroll-controls button:hover,
+#autoscroll-controls button:focus,
+#autoscroll-controls button:active {
+    opacity: 1;
+}
+
 @media print {
 
     #fitscreen-controls,
     #fitscreen-enter,
+    #autoscroll-enter,
     #key {
         display: none;
     }

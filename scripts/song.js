@@ -28,22 +28,32 @@
     const parts = (line) => line.split(/(\[[^\]]+\])/).filter(Boolean)
         .map((p) => (p.startsWith("[") ? { chord: p.slice(1, -1) } : { text: p }));
 
+    const SUFFIX = /\s*\{(\d*\.?\d+)\}$/;            // `… {1}`: this line lasts 1 bar
+    const POSITIONED = new Set(["tempo", "time", "bars"]);  // in the body these apply from the next line on
+
     function parse(text) {
         const meta = {}, blocks = [];
         let m;
         for (const raw of text.split("\n")) {
-            const line = raw.trimEnd();
+            let line = raw.trimEnd();
             const last = blocks[blocks.length - 1];
-            if ((m = /^\{(\w+):\s*(.*)\}$/.exec(line))) meta[m[1]] = m[2].trim();
-            else if (line.startsWith("#")) continue;
+            const bars = SUFFIX.exec(line)?.[1];
+            if (bars) line = line.replace(SUFFIX, "");
+            if ((m = /^\{(\w+)(?::\s*(.*))?\}$/.exec(line))) {
+                const [, key, value = ""] = m;
+                if (key === "hold" || (POSITIONED.has(key) && blocks.some((b) => b.type !== "blank"))) {
+                    blocks.push({ type: "directive", name: key, value: value.trim() });
+                } else meta[key] = value.trim();
+            } else if (line.startsWith("#")) continue;
             else if ((m = /^\[([^[\]]+)\]$/.exec(line))) blocks.push({ type: "section", name: m[1] });
             else if ((m = /^>\s*(.+?)(?:\s*=\s*(.+))?$/.exec(line))) blocks.push({ type: "repeat", label: m[1], target: m[2] || m[1] });
             else if (line === "---") blocks.push({ type: "break" });
             else if (!line.trim()) blocks.push({ type: "blank" });
             else if (isChordLine(line)) {
-                if (last?.type === "pre") last.lines.push(line);
-                else blocks.push({ type: "pre", lines: [line] });
-            } else blocks.push({ type: "line", parts: parts(line) });
+                if (last?.type !== "pre") blocks.push({ type: "pre", lines: [], bars: [] });
+                blocks.at(-1).lines.push(line);
+                blocks.at(-1).bars.push(bars && +bars);
+            } else blocks.push({ type: "line", parts: parts(line), ...(bars && { bars: +bars }) });
         }
         return { meta, blocks };
     }
@@ -62,6 +72,7 @@
 
     const song = document.getElementById("song");
     let name = "", list = [], at = -1;
+    let tl = null, redraw = () => {};
     const el = (tag, cls, text) => {
         const e = document.createElement(tag);
         if (cls) e.className = cls;
@@ -72,17 +83,44 @@
     const nbsp = (s) => s.replace(/ {2,}/g, (g) => " ".repeat(g.length));
 
     function render(model, steps, flats) {
+        redraw = () => render(model, steps, flats);
         const tx = (c) => (steps ? transposeChord(c, steps, flats) : c);
         // Keep bar lines aligned: pad a shorter chord to the width it replaces.
         const txPre = (line) => (steps
             ? line.replace(/\S+/g, (t) => (isChord(t) ? tx(t).padEnd(t.length) : t))
             : line);
+        const lyric = (node, parts) => {
+            for (const p of parts) node.append(p.chord ? el("span", "chord", `[${tx(p.chord)}]`) : nbsp(p.text));
+            return node;
+        };
+
+        // Stage view (scripts/autoscroll.js): one column, repeats and x3 written out,
+        // every line tagged with its timeline event.
+        if (tl && document.body.classList.contains("autoscroll")) {
+            const div = el("div", "column stage");
+            tl.events.forEach((e, i) => {
+                if (e.head) {
+                    const head = el("div", "section", e.section);
+                    head.dataset.head = i;
+                    div.append(head);
+                }
+                const line = e.kind === "chords" ? el("pre", "chord line", txPre(e.text)) : lyric(el("div", "line"), e.parts);
+                if (e.gap) line.classList.add("gap");
+                if (e.kind === "direction") line.classList.add("direction");
+                line.dataset.event = i;
+                div.append(line);
+            });
+            song.replaceChildren(div);
+            document.dispatchEvent(new Event("songrender"));
+            return;
+        }
 
         const columns = [];
         let cur = null;
         const open = (header) => columns.push((cur = { header, items: [] }));
         for (const b of model.blocks) {
-            if (b.type === "section" || b.type === "repeat") open(b);
+            if (b.type === "directive") continue;
+            else if (b.type === "section" || b.type === "repeat") open(b);
             else if (b.type === "break") open(null);
             else {
                 if (!cur) open(null);
@@ -114,9 +152,7 @@
                     div.append(el("pre", "chord", it.lines.map(txPre).join("\n")));
                 } else {
                     if (prev === "line") div.append(el("br"));
-                    for (const p of it.parts) {
-                        div.append(p.chord ? el("span", "chord", `[${tx(p.chord)}]`) : nbsp(p.text));
-                    }
+                    lyric(div, it.parts);
                 }
                 prev = it.type;
             });
@@ -124,6 +160,7 @@
         }
         song.replaceChildren(...out);
         fillRepeats();
+        document.dispatchEvent(new Event("songrender"));
     }
 
     // `<details data-repeat="id">` shows only its section name until tapped, and fills
@@ -178,6 +215,7 @@
         document.getElementById("key")?.closest("li").remove();
         const small = document.getElementById("credits");
         small.parentElement.hidden = true;
+        tl = null;
         if (!/^[\w-]+$/.test(name)) {
             song.textContent = "No song given: open this page as song.html?s=SongName";
             return;
@@ -187,6 +225,8 @@
             .then((text) => {
                 if (mine !== loads) return;
                 const model = parse(text);
+                tl = globalThis.Timeline?.timeline(model) ?? null;
+                for (const w of tl?.warnings ?? []) console.warn(`${name}: ${w}`);
                 const { title = name, artist, key, credits } = model.meta;
                 document.title = title;
                 document.querySelector(".pure-menu-heading").textContent = artist ? `${title} - ${artist}` : title;
@@ -198,7 +238,7 @@
                 if (key) addKeyPicker(key, (steps, flats) => render(model, steps, flats));
             })
             .catch((err) => { if (mine === loads) song.textContent = `Could not load ${name}.cho (${err.message})`; })
-            .finally(() => { if (mine === loads) document.dispatchEvent(new Event("songchange")); });
+            .finally(() => { if (mine === loads) document.dispatchEvent(new CustomEvent("songchange", { detail: { timeline: tl } })); });
     }
 
     /* ---------- playlist ---------- */
@@ -258,6 +298,7 @@
 
         document.addEventListener("keydown", (e) => {
             if (/^(SELECT|INPUT)$/.test(e.target.tagName)) return;   // the key picker keeps its arrows
+            if (document.body.classList.contains("autoscroll")) return;   // arrows drive the clock there
             if (e.key === "ArrowLeft") go(-1);
             else if (e.key === "ArrowRight") go(1);
             else return;
@@ -265,6 +306,10 @@
         });
         window.addEventListener("popstate", load);
     })();
+
+    // scripts/autoscroll.js has no header to click: it asks for a song change or a redraw.
+    document.addEventListener("songgo", (e) => go(e.detail));
+    document.addEventListener("songredraw", () => redraw());
 
     load();
 })();
