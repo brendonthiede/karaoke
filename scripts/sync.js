@@ -19,11 +19,13 @@
     const now = () => Date.now() / 1000 + offset;
 
     // `rev` is the publish time in relay time, so states from different devices order
-    // correctly and the copy that arrives by the second path is ignored.
+    // correctly and the copy that arrives by the second path is ignored. A rev from the
+    // future is refused: accepted, it would make every later real state look stale.
+    const FUTURE_MS = 60000;
     let latest = null;
     const stateListeners = [], statusListeners = [];
     function receive(state) {
-        if (!state || state.rev <= (latest?.rev ?? 0)) return;
+        if (!(state?.rev > (latest?.rev ?? 0) && state.rev < now() * 1000 + FUTURE_MS)) return;
         latest = state;
         for (const cb of stateListeners) cb(state);
     }

@@ -93,7 +93,11 @@
     const fromState = (st) => ({ playing: st.state === "playing", time: st.anchor.relayTime, beat: st.anchor.beat, scale: st.tempoScale ?? 1 });
 
     let waiting = null, prefetched = "";
+    // Anyone with the room word can publish, so a state is checked before it moves the clock.
+    const valid = (st) => Number.isFinite(st.anchor?.relayTime) && Number.isFinite(st.anchor?.beat)
+        && Number.isFinite(st.tempoScale ?? 1) && (st.tempoScale ?? 1) > 0 && Array.isArray(st.playlist ?? []);
     function follow(st) {
+        if (!valid(st)) return;
         if (leading()) {
             if (st.from === sync.id) return;   // the relay handing back this tab's state from before a reload
             setRole("stage");                  // someone took the lead: last writer wins
@@ -101,7 +105,7 @@
         if (!following()) return;
         if (st.playlist?.join() !== prefetched) {
             prefetched = st.playlist?.join() ?? "";
-            for (const n of st.playlist ?? []) fetch(`${n}.cho`).catch(() => {});   // so a Wi-Fi drop mid-set still has the charts
+            for (const n of st.playlist ?? []) if (/^[\w-]+$/.test(n)) fetch(`${n}.cho`).catch(() => {});   // so a Wi-Fi drop mid-set still has the charts
         }
         if (st.song === songName() && tl) {
             clock = fromState(st);
