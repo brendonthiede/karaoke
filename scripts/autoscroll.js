@@ -1,6 +1,8 @@
 // Stage view: the chart in one column, scrolled by a beat clock so the current line
-// rests on the now line. Timing model and controls: docs/autoscroll-plan.md.
+// rests on the now line. Timing model, controls and roles: docs/autoscroll-plan.md.
 // song.js renders the column (body.autoscroll); this file owns the clock and the view.
+// `?role=lead` publishes the clock through sync.js, `?role=stage` follows it; with no
+// role the view runs alone and never publishes.
 (() => {
     const song = document.getElementById("song");
     if (!song || !globalThis.Timeline) return;
@@ -20,16 +22,23 @@
 
     /* ---------- clock ---------- */
 
+    const sync = globalThis.Sync;
+    let role = sync ? new URLSearchParams(location.search).get("role") : null;
+    const leading = () => role === "lead", following = () => role === "stage";
+
     let tl = null;
     // Position is computed from the anchor every frame, never accumulated (plan: "broadcast state").
-    let clock = { playing: false, time: 0, beat: 0, scale: 1 };
-    const now = () => performance.now() / 1000;
+    // Anchor times are relay time, so a follower can compute from the leader's anchor.
+    const START = { playing: false, time: 0, beat: 0, scale: 1 };
+    let clock = START;
+    const now = () => sync?.now() ?? performance.now() / 1000;
     const position = () => (clock.playing
         ? Math.min(beatAt(tl, clock.beat, (now() - clock.time) * clock.scale), tl.end)
         : clock.beat);
     const anchor = (changes) => {
         const beat = Math.max(0, Math.min(tl.end, changes.beat ?? position()));
         clock = { ...clock, ...changes, beat, time: now() };
+        if (leading()) publish();
     };
     const bpmAt = (beat) => tl.tempo.findLast((st) => st.beat <= beat).bpm;
     const atHold = (pos) => clock.playing && tl.holds.includes(pos);
@@ -67,6 +76,55 @@
         if (taps.length < 4) return;
         const bpm = 60 / ((taps[3] - taps[0]) / 3);
         anchor({ scale: bpm / bpmAt(position()) });
+    }
+
+    /* ---------- leading and following ---------- */
+
+    const songName = () => new URLSearchParams(location.search).get("s");
+    function publish() {
+        const p = (new URLSearchParams(location.search).get("p") || "").split(",").filter(Boolean);
+        const state = {
+            song: songName(), playlist: p, state: clock.playing ? "playing" : "paused",
+            anchor: { relayTime: clock.time, beat: clock.beat }, tempoScale: clock.scale,
+        };
+        sync.publish(state);
+        try { sessionStorage.setItem("lead", JSON.stringify(state)); } catch { /* no reload recovery */ }
+    }
+    const fromState = (st) => ({ playing: st.state === "playing", time: st.anchor.relayTime, beat: st.anchor.beat, scale: st.tempoScale ?? 1 });
+
+    let waiting = null, prefetched = "";
+    function follow(st) {
+        if (leading()) {
+            if (st.from === sync.id) return;   // the relay handing back this tab's state from before a reload
+            setRole("stage");                  // someone took the lead: last writer wins
+        }
+        if (!following()) return;
+        if (st.playlist?.join() !== prefetched) {
+            prefetched = st.playlist?.join() ?? "";
+            for (const n of st.playlist ?? []) fetch(`${n}.cho`).catch(() => {});   // so a Wi-Fi drop mid-set still has the charts
+        }
+        if (st.song === songName() && tl) {
+            clock = fromState(st);
+            return;
+        }
+        waiting = st;
+        if (st.song !== songName()) {
+            document.dispatchEvent(new CustomEvent("songopen", { detail: { s: st.song, p: st.playlist ?? [] } }));
+        }
+    }
+    sync?.onState(follow);
+
+    function setRole(r) {
+        role = r;
+        const q = new URLSearchParams(location.search);
+        q.set("role", r);
+        history.replaceState(null, "", `?${q}`.replace(/%2C/g, ","));
+        for (const b of leaderOnly) b.hidden = following();
+        takeLead.hidden = !following();
+    }
+    function takeTheLead() {
+        setRole("lead");
+        anchor({});
     }
 
     /* ---------- layout ---------- */
@@ -169,6 +227,8 @@
         text += ` · ${tempo} bpm` + (clock.scale !== 1 ? ` (${clock.scale > 1 ? "+" : ""}${Math.round((clock.scale - 1) * 100)}%)` : "");
         if (atHold(pos)) text += " · Hold";
         else if (!clock.playing) text += " · Paused";
+        if (role) text += leading() ? " · Leading" : " · Following";
+        if (role && sync.enabled && !sync.connected) text += " · reconnecting";
         if (label.textContent !== text) label.textContent = text;
         const playing = clock.playing && !atHold(pos);
         if (playButton.textContent !== (playing ? "⏸" : "▶")) playButton.textContent = playing ? "⏸" : "▶";
@@ -176,16 +236,22 @@
 
     /* ---------- entering and leaving ---------- */
 
+    function show() {
+        if (on()) return;
+        document.body.classList.add("autoscroll");
+        document.dispatchEvent(new Event("songredraw"));
+        requestAnimationFrame(frame);
+    }
+
     async function enter() {
         if (!tl) return;
-        document.body.classList.add("autoscroll");
-        clock = { playing: false, time: 0, beat: 0, scale: 1 };
-        document.dispatchEvent(new Event("songredraw"));
+        clock = START;
+        show();
+        if (leading()) anchor({});
         const root = document.documentElement;
         try {
             await (root.requestFullscreen?.() ?? root.webkitRequestFullscreen?.());
         } catch { /* iPadOS: Add to Home Screen instead, see AGENTS.md */ }
-        requestAnimationFrame(frame);
     }
 
     function leave() {
@@ -212,17 +278,26 @@
     const playButton = button("▶", "Play / pause (space)", toggle);
     const songGo = (d) => document.dispatchEvent(new CustomEvent("songgo", { detail: d }));
     const playlist = (new URLSearchParams(location.search).get("p") || "").split(",").filter(Boolean).length > 1;
-    controls.append(
+    const leaderOnly = [
         ...(playlist ? [button("‹", "Previous song", () => songGo(-1))] : []),
         playButton,
         button("Tap", "Tap tempo, four times on the beat (t)", tap),
         button("−%", "Slower 2% ([)", () => scaleBy(1 / TEMPO_STEP)),
         button("+%", "Faster 2% (])", () => scaleBy(TEMPO_STEP)),
+    ];
+    const next = playlist ? [button("›", "Next song", () => songGo(1))] : [];
+    leaderOnly.push(...next);
+    const takeLead = button("Lead", "Take the lead", takeTheLead);
+    controls.append(
+        ...leaderOnly.slice(0, leaderOnly.length - next.length),
+        takeLead,
         button("A−", "Smaller", () => zoom(-1)),
         button("A+", "Bigger", () => zoom(1)),
-        ...(playlist ? [button("›", "Next song", () => songGo(1))] : []),
+        ...next,
         button("✕", "Exit autoscroll (Esc)", leave),
     );
+    if (role) setRole(role);
+    else takeLead.hidden = true;
     document.body.append(nowLine, status, count, controls);
 
     const menu = document.querySelector(".pure-menu-list");
@@ -238,7 +313,7 @@
 
     // Tap a line: sync-here. Tap a section name: jump there, paused. A drag is a peek.
     song.addEventListener("click", (e) => {
-        if (!on()) return;
+        if (!on() || following()) return;
         const line = e.target.closest("[data-event]"), head = e.target.closest("[data-head]");
         if (line) syncHere(+line.dataset.event);
         else if (head) jump(+head.dataset.head);
@@ -258,7 +333,7 @@
             "]": () => scaleBy(TEMPO_STEP), "[": () => scaleBy(1 / TEMPO_STEP),
             "+": () => zoom(1), "=": () => zoom(1), "-": () => zoom(-1), Escape: leave,
         };
-        if (!keys[e.key]) return;
+        if (!keys[e.key] || (following() && !/^[-+=]$|^Escape$/.test(e.key))) return;
         e.preventDefault();
         keys[e.key]();
     });
@@ -274,9 +349,20 @@
         tl = e.detail?.timeline ?? null;
         item.hidden = !tl;
         try { steps = Number(localStorage.getItem(sizeKey())) || 0; } catch { steps = 0; }
+        if (role && tl) show();   // leading and following both live in the stage view
         if (!on()) return;
         if (!tl) return leave();
-        clock = { playing: false, time: 0, beat: 0, scale: 1 };
+        clock = START;
+        if (following() && waiting?.song === songName()) {
+            clock = fromState(waiting);
+            waiting = null;
+        } else if (leading()) {
+            // A reload re-publishes where the leader was rather than restarting the room.
+            let saved = null;
+            try { saved = JSON.parse(sessionStorage.getItem("lead")); } catch { /* start over */ }
+            if (saved?.song === songName()) clock = fromState(saved);
+            anchor({});
+        }
         size();
     });
     document.addEventListener("songrender", () => { if (on()) size(); });

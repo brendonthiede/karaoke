@@ -12,8 +12,9 @@ served straight from disk (`python3 -m http.server`, see README).
 | `tabs/` | Chord charts: `.cho` (song format, rendered by `song.html`), `.html` (older hand-written tabs), `.txt`/`.tab` (chord-over-lyric source). |
 | `media/` | Local karaoke video files. |
 | `icons/` | App icons (manifest, iOS home screen), all resized from `source.jpg`; `favicon.ico` is a 32px PNG cropped from it. |
+| `relay/` | Cloudflare Worker that syncs autoscroll between devices. The only non-browser runtime code; dev and deploy with `npx wrangler@4`. |
 | `tools/` | Python converters (see below). Not served — dev-time only. |
-| `scripts/` | Browser JS: `song.js` (`.cho` renderer, repeats, key picker), `timeline.js` + `autoscroll.js` (stage view, below), `fitscreen.js`, `device.js` (screen wake lock + offline registration; every page loads it), `enableToggleChords.js`. |
+| `scripts/` | Browser JS: `song.js` (`.cho` renderer, repeats, key picker), `timeline.js` + `autoscroll.js` + `sync.js` (stage view and sync, below), `fitscreen.js`, `device.js` (screen wake lock + offline registration; every page loads it), `enableToggleChords.js`. |
 | `*.css` | Pure.css + Font Awesome, vendored. `style.css` is ours. |
 
 ## Adding a song
@@ -131,8 +132,22 @@ chart says `{count: 0}` or another number. Design, directives and controls are i
 pause, ↑/↓ nudge a line, Home restart, `t` ×4 tap tempo, `[`/`]` ∓2%, `+`/`-`
 size, Esc exit. Tap a line to sync there, tap a section name to jump there
 paused, drag to peek (the clock takes the view back 3 s later). While it is on,
-the arrows drive the clock, not Prev/Next song. Single device only for now; sync
-across devices is phase 3.
+the arrows drive the clock, not Prev/Next song.
+
+**Sync across devices.** Each device types the band's room word into the field on
+`index.html`. "Lead (n)" opens the ticked songs with `&role=lead` and publishes
+the clock; "Follow" opens `song.html?role=stage`, which waits for the leader and
+opens whatever it is on. Any follower can press "Lead" to take over. "Play (n)"
+never publishes. `scripts/sync.js` carries the state: a WebSocket to the relay
+(`relay/`, a Cloudflare Worker) plus a `BroadcastChannel` between tabs on one
+machine. `RELAY` in `sync.js` is the deployed address; set
+`localStorage.relay = "ws://…"` to point one browser elsewhere.
+
+To try it locally: `cd relay && npx wrangler@4 dev` (port 8787; pages served
+from `localhost` use it automatically), serve the site, and open a leader and a
+follower in two browser profiles, or a normal and a private window, so they don't
+share storage. Two tabs in one profile sync over `BroadcastChannel` even with no
+relay.
 
 ## Offline
 

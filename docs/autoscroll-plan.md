@@ -2,7 +2,8 @@
 
 Status: design settled 2026-10-11 after a grilling session. Phases 1 and 2 done
 2026-10-27: parser, `scripts/timeline.js`, `scripts/autoscroll.js`; Better Is One
-Day is the one timed chart. Directions (`(Acapella)`) take no time in the
+Day is the one timed chart. Phase 3 built and tested locally against `wrangler
+dev`; relay deployed 2026-10-28 to `wss://karaoke-relay.brendon-thiede.workers.dev`, untested on real devices. Directions (`(Acapella)`) take no time in the
 timeline and are not repeated by `x3`. The key picker sits in the header, which
 the stage view hides: pick the key before entering.
 Vocabulary is in `CONTEXT.md`. The decisions log at the end is the record of
@@ -249,7 +250,13 @@ WebSocket per device. A message from a leader is stored as last state and
 broadcast; a device that connects receives the last state at once. Every
 message is stamped with the relay's clock; devices ping a few times at connect
 and once a minute to estimate `offset`. No validation beyond the room, no
-history, nothing persisted past the object's memory.
+history. The last state is kept in the object's storage, not a field, because the
+hibernation API evicts the object between messages; it is not handed out after
+12 hours, so last week's song never opens on Sunday.
+
+`rev` is the publish time in relay milliseconds. A device applies a state only if
+its `rev` is newer than the last one it saw, which orders states from different
+leaders and drops the second copy of one that arrives by both paths.
 
 Devices on the same machine (dev, or a laptop driving both a stage window and
 the projector) also hear each other over `BroadcastChannel("karaoke")`, which

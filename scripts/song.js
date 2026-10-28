@@ -217,7 +217,9 @@
         small.parentElement.hidden = true;
         tl = null;
         if (!/^[\w-]+$/.test(name)) {
-            song.textContent = "No song given: open this page as song.html?s=SongName";
+            song.textContent = new URLSearchParams(location.search).get("role") === "stage"
+                ? `Waiting for the leader in room "${globalThis.Sync?.room || ""}"…`
+                : "No song given: open this page as song.html?s=SongName";
             return;
         }
         fetch(`${name}.cho`, { cache: "no-cache" })
@@ -249,8 +251,15 @@
     let pos;
     function go(delta) {
         const to = at + delta;
-        if (to < 0 || to >= list.length) return;
-        history.pushState(null, "", `?s=${list[to]}&p=${list.join(",")}`);
+        if (to >= 0 && to < list.length) openSong(list[to], list);
+    }
+    // Other parameters (?role=) ride along.
+    function openSong(s, p) {
+        const q = new URLSearchParams(location.search);
+        q.set("s", s);
+        if (p.length) q.set("p", p.join(","));
+        else q.delete("p");
+        history.pushState(null, "", `?${q}`.replace(/%2C/g, ","));
         load();
     }
     function updateNav() {
@@ -309,6 +318,7 @@
 
     // scripts/autoscroll.js has no header to click: it asks for a song change or a redraw.
     document.addEventListener("songgo", (e) => go(e.detail));
+    document.addEventListener("songopen", (e) => openSong(e.detail.s, e.detail.p));
     document.addEventListener("songredraw", () => redraw());
 
     load();

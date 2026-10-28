@@ -415,20 +415,57 @@
     </script>
     <script>
         // Playlist picker: tick .cho songs, Play opens them in tick order (see AGENTS.md).
+        // With a room set, Lead opens them as the autoscroll leader and Follow joins one
+        // (docs/autoscroll-plan.md "Roles").
         (() => {
             const picked = [];
-            const li = document.createElement("li");
-            li.className = "pure-menu-item";
-            li.hidden = true;
-            const play = document.createElement("a");
-            play.className = "pure-menu-link";
-            li.append(play);
-            document.querySelector(".pure-menu-list").append(li);
-            const update = () => {
-                li.hidden = !picked.length;
+            const menu = document.querySelector(".pure-menu-list");
+            const link = (text) => {
+                const li = document.createElement("li");
+                li.className = "pure-menu-item";
+                const a = document.createElement("a");
+                a.className = "pure-menu-link";
+                a.textContent = text;
+                li.append(a);
+                menu.append(li);
+                return a;
+            };
+            const play = link(""), lead = link(""), follow = link("Follow");
+            follow.href = "./tabs/song.html?role=stage";
+            lead.addEventListener("click", (e) => { if (lead.classList.contains("pure-menu-disabled")) e.preventDefault(); });
+
+            const roomItem = document.createElement("li");
+            roomItem.className = "pure-menu-item";
+            const room = document.createElement("input");
+            room.placeholder = "Room";
+            room.title = "Room word, the same on every device in the band";
+            room.size = 8;
+            room.style.cssText = "font: inherit; font-size: 80%; margin: 0 0.5em";
+            try { room.value = localStorage.getItem("room") || ""; } catch { /* not remembered */ }
+            room.addEventListener("change", () => {
+                room.value = room.value.trim();
+                try { localStorage.setItem("room", room.value); } catch { /* not remembered */ }
+                update();
+            });
+            roomItem.append(room);
+            menu.append(roomItem);
+
+            // Lead only makes sense when every ticked song can autoscroll, i.e. has {tempo}.
+            const timed = {};
+            const isTimed = (n) => (timed[n] ??= fetch(`./tabs/${n}.cho`)
+                .then((r) => r.text()).then((t) => /^\{tempo:/m.test(t)).catch(() => false));
+            const update = async () => {
+                play.parentElement.hidden = lead.parentElement.hidden = !picked.length;
+                follow.parentElement.hidden = !room.value;
                 play.textContent = `Play (${picked.length})`;
                 play.href = `./tabs/song.html?s=${picked[0]}&p=${picked.join(",")}`;
+                lead.textContent = `Lead (${picked.length})`;
+                lead.href = `${play.href}&role=lead`;
+                const all = (await Promise.all(picked.map(isTimed))).every(Boolean);
+                lead.classList.toggle("pure-menu-disabled", !room.value || !all);
+                lead.title = !room.value ? "Set a room first" : all ? "Lead these songs in autoscroll" : "Every song needs a {tempo} to lead";
             };
+            update();
             for (const row of document.querySelectorAll("tbody tr")) {
                 const m = /song\.html\?s=([\w-]+)/.exec(row.querySelector("td:last-child a")?.href || "");
                 if (!m) continue;
