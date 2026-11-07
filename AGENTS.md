@@ -36,6 +36,11 @@ The 4th column links `song.html?s=Name` for a `.cho`, or a `.html`, `.txt`, `.pd
 or a file in `media/` — whatever exists. Use `&mdash;` for a cell with nothing
 to link rather than inventing a URL.
 
+A worship row also gets `<tr data-themes="Praise,Trust">`, read from its lyrics;
+the theme menu on `index.html` is built from these. Reuse the existing theme
+names (Praise, Thanksgiving, Majesty, Forgiveness, Faithfulness, Trust,
+Surrender, Presence, Love, Hope) before adding a new one.
+
 **Never fabricate a YouTube link.** Leave it as `&mdash;` and say so; the owner
 fills it in. Several existing links are unverified.
 
