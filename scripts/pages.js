@@ -218,8 +218,24 @@
         menu.prepend(item);
     }
 
+    // iOS 18.4+ Safari drops key events from pedals that pair as keyboard + pointer
+    // (the JSP-01) unless a text field has focus (WebKit bug 290779). This field holds
+    // focus in Pages and Autoscroll; inputmode=none keeps the on-screen keyboard down.
+    // iOS only focuses on a tap: entering the view is one, and any later tap refocuses.
+    const pedal = document.createElement("input");
+    pedal.id = "pedal";
+    pedal.setAttribute("inputmode", "none");
+    pedal.setAttribute("aria-hidden", "true");
+    pedal.tabIndex = -1;
+    pedal.autocomplete = "off";
+    pedal.addEventListener("input", () => { pedal.value = ""; });
+    document.body.append(pedal);
+    document.addEventListener("click", () => {
+        if (document.body.matches(".pages, .autoscroll")) pedal.focus({ preventScroll: true });
+    });
+
     document.addEventListener("keydown", (e) => {
-        if (!on() || /^(SELECT|INPUT)$/.test(e.target.tagName)) return;
+        if (!on() || (/^(SELECT|INPUT)$/.test(e.target.tagName) && e.target !== pedal)) return;
         const keys = {
             PageDown: next, ArrowDown: next, ArrowRight: next, " ": next,
             PageUp: prev, ArrowUp: prev, ArrowLeft: prev,

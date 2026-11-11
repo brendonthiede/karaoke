@@ -420,6 +420,21 @@ body.pages #song {
     padding: 50vh 0;
 }
 
+/* Holds focus so iOS delivers pedal keys (scripts/pages.js). 16px: iOS zooms
+   into a focused field with smaller type. */
+#pedal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    border: 0;
+    font-size: 16px;
+    opacity: 0;
+    pointer-events: none;
+}
+
 /* Measuring the longest line for type size: no wrapping while it's measured. */
 #song.pages-measuring,
 #song.pages-measuring pre.chord {

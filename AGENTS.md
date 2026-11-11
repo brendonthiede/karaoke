@@ -138,6 +138,13 @@ than the screen starts at the top. Past either end of a song it steps to the
 next/previous song in the playlist (`?p=`). `+`/`-`
 size, remembered per song as steps; Esc exits.
 
+**iOS pedals.** Since iOS 18.4, Safari sends no key events from a pedal that pairs as
+keyboard + pointer (the JSP-01; WebKit bug 290779) unless a text field has focus, so
+Pages and Autoscroll keep a hidden `#pedal` input (`inputmode="none"`) focused. iOS
+only focuses on a tap: entering the view counts, and a follower that the leader
+switched into a view needs one tap on the screen. Key guards that skip `INPUT`
+targets must exempt `#pedal`.
+
 With a room set, "Lead (n)" on `index.html` opens a song with `{tempo}` in autoscroll
 and any other in Pages, and a leader already paging stays in Pages. Each turn
 publishes `{view: "pages", song, line}` through `sync.js`, where `line` is the index

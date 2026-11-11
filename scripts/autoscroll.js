@@ -330,7 +330,7 @@
 
     // A pedal sends arrows or Page Up/Down: right/down plays, left/up pauses.
     document.addEventListener("keydown", (e) => {
-        if (!on() || /^(SELECT|INPUT)$/.test(e.target.tagName)) return;
+        if (!on() || (/^(SELECT|INPUT)$/.test(e.target.tagName) && e.target.id !== "pedal")) return;
         const keys = {
             " ": toggle, ArrowRight: play, PageDown: play, ArrowLeft: pause, PageUp: pause,
             ArrowDown: () => nudge(1), ArrowUp: () => nudge(-1), Home: restart, t: tap,
