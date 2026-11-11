@@ -1,7 +1,7 @@
 // Page-turner view: the chart in one big column, moved a whole screen per press, for a
 // pedal like the JSP-01 (it sends Page Up/Down or arrows, depending on its mode).
-// A page ends at the last line that fits whole; the line cut off at the bottom opens
-// the next page. Past the last page, a press moves to the next song in the playlist.
+// Each press centers the next block (lines the .cho separates with a blank line).
+// Past the last block, a press moves to the next song in the playlist.
 // With `?role=lead` every turn is published through sync.js and `?role=stage` devices
 // follow it. With a role, charts without {tempo} page; autoscroll.js has the rest.
 (() => {
@@ -9,7 +9,7 @@
     if (!song) return;
 
     const STEP = 1.1, MIN_PX = 12, MAX_PX = 120;
-    const PAD = 8;   // px left above a page's first line
+    const PAD = 8;   // px left above a block too tall to center
     const sync = globalThis.Sync;
     const on = () => document.body.classList.contains("pages");
     const leading = () => sync?.role === "lead", following = () => sync?.role === "stage";
@@ -72,28 +72,63 @@
         steps += d;
         try { localStorage.setItem(key(), steps); } catch { /* not remembered */ }
         size();
-        if (following()) align();
+        center();
     }
 
     /* ---------- leading and following ---------- */
 
+    /* ---------- blocks ---------- */
+
+    // A block is what the .cho file separates with a blank line: rendered lines that sit
+    // closer than a blank line's gap. A section name joins the block under it. Found
+    // from layout, so every renderer (and every screen width) gives the same blocks.
+    function blocks() {
+        const gap = 0.9 * parseFloat(getComputedStyle(song).fontSize);
+        const out = [];
+        for (const r of lineRects().sort((a, b) => a.top - b.top)) {
+            const b = out.at(-1);
+            if (b && (r.top - b.bottom < gap || b.heading)) {
+                b.bottom = Math.max(b.bottom, r.bottom);
+                b.first = Math.min(b.first, r.i);
+                b.last = Math.max(b.last, r.i);
+                b.heading &&= r.section;
+            } else out.push({ top: r.top, bottom: r.bottom, first: r.i, last: r.i, heading: r.section });
+        }
+        return out;
+    }
+
+    // The current block is centered between the top of the screen and the controls;
+    // one taller than that starts at the top instead.
+    let cur = 0;
+    const bottom = () => controls.getBoundingClientRect().top - 4;
+    function center() {
+        const all = blocks();
+        cur = Math.max(0, Math.min(cur, all.length - 1));
+        const b = all[cur];
+        if (!b) return;
+        const room = bottom();
+        scrollBy(0, b.bottom - b.top > room - 2 * PAD ? b.top - PAD : (b.top + b.bottom - room) / 2);
+    }
+
+    /* ---------- leading and following ---------- */
+
+    // A block is named by its first text node, the same index on every device.
     function publish() {
         if (!leading() || !on()) return;
-        const top = lineRects().find((r) => r.top >= -1);
         sync.publish({
-            view: "pages", song: songName(), line: top?.i ?? 0,
+            view: "pages", song: songName(), line: blocks()[cur]?.first ?? 0,
             playlist: (new URLSearchParams(location.search).get("p") || "").split(",").filter(Boolean),
         });
     }
 
-    // The leader's top line goes to the top here. A smaller screen shows less of the
-    // page; its own pedal can turn locally until the leader's next turn.
+    // The leader's block is centered here too. A follower's own pedal moves it on
+    // locally until the leader's next turn.
     let wanted = null;
     function align() {
         if (wanted?.song !== songName()) return;
-        if (!wanted.line) return scrollTo(0, 0);   // the leader's first page, margin and all
-        const r = lineRects().find((x) => x.i === wanted.line);
-        if (r) scrollBy(0, r.top - PAD);
+        const i = blocks().findIndex((b) => b.first <= wanted.line && wanted.line <= b.last);
+        if (i >= 0) cur = i;
+        center();
     }
 
     // Anyone with the room word can publish, so a state is checked before it moves the view.
@@ -120,31 +155,15 @@
 
     /* ---------- turning ---------- */
 
-    const bottom = () => controls.getBoundingClientRect().top - 4;
     const songGo = (d) => document.dispatchEvent(new CustomEvent("songgo", { detail: d }));
-
-    function next() {
-        const rects = lineRects(), cut = rects.filter((r) => r.bottom > bottom() + 1);
-        let top = Math.min(...cut.map((r) => r.top));
-        // A section name left as the last line goes over with the section it names.
-        const last = rects.filter((r) => r.bottom <= bottom() + 1).sort((a, b) => a.bottom - b.bottom).at(-1);
-        if (last?.section) top = Math.min(top, last.top);
-        const before = scrollY;
-        // A line taller than the screen would never move; turn a full screen instead.
-        if (cut.length) scrollBy(0, top > PAD ? top - PAD : bottom());
-        if (scrollY === before) songGo(1);
-        else publish();
-    }
-    function prev() {
-        if (scrollY <= 0) return songGo(-1);
-        // The last line wholly above the screen becomes this page's last line.
-        const above = lineRects().filter((r) => r.bottom <= PAD);
-        const delta = above.length ? Math.max(...above.map((r) => r.bottom)) - bottom() : -bottom();
-        // Near the top, go all the way: a sliver of page one would cost a press.
-        if (scrollY + delta < innerHeight / 4) scrollTo(0, 0);
-        else scrollBy(0, delta);
+    // Past either end of the song, the playlist's next or previous one.
+    function turn(d) {
+        if (cur + d < 0 || cur + d >= blocks().length) return songGo(d);
+        cur += d;
+        center();
         publish();
     }
+    const next = () => turn(1), prev = () => turn(-1);
 
     /* ---------- entering and leaving ---------- */
 
@@ -155,7 +174,8 @@
     }
     async function enter() {
         show();
-        scrollTo(0, 0);
+        cur = 0;
+        center();
         publish();
         const root = document.documentElement;
         try {
@@ -223,21 +243,24 @@
         if (sync?.role && songName() && !e.detail?.timeline && !document.body.classList.contains("autoscroll")) show();
         if (!on()) return;
         size();
-        scrollTo(0, 0);
+        cur = 0;
         if (following()) align();
-        else publish();
+        else {
+            center();
+            publish();
+        }
     }));
     // A key change re-renders the chart.
     document.addEventListener("songrender", () => {
         if (!on()) return;
         size();
-        if (following()) align();
+        center();
     });
 
     let pending;
     addEventListener("resize", () => {
         if (!on()) return;
         clearTimeout(pending);
-        pending = setTimeout(() => { size(); if (following()) align(); }, 150);
+        pending = setTimeout(() => { size(); center(); }, 150);
     });
 })();

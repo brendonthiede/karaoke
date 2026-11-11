@@ -402,7 +402,7 @@ body.pages #pages-controls {
 
 /*
  * -- PAGES (PAGE TURNER) STYLES --
- * See scripts/pages.js. One column; the type size is set from JS.
+ * See scripts/pages.js. One column; the type size and scroll are set from JS.
  */
 
 body.pages .header {
@@ -413,9 +413,11 @@ body.pages .content {
     padding: 0 1em;
 }
 
+/* Room above the first block and below the last, so both can be centered. */
 body.pages #song {
     column-count: 1;
     line-height: 1.5;
+    padding: 50vh 0;
 }
 
 /* Measuring the longest line for type size: no wrapping while it's measured. */

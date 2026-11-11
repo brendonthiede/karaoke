@@ -131,17 +131,18 @@ that's the only way to actually lose the address bar there.
 
 `scripts/pages.js` adds a "Pages" link to every `song.html` chart, tempo or not: one
 column, sized so the longest line fills the width, with collapsed repeats opened. A
-pedal (JSP-01 or similar) turns a whole screen per press: Page Down, ↓, → or space
-forward; Page Up, ↑, ← back. The line cut off at the bottom opens the next page, and
-a section name left as a page's last line moves over with its section. Past either
-end of a song it steps to the next/previous song in the playlist (`?p=`). `+`/`-`
+pedal (JSP-01 or similar) centers the next block per press: Page Down, ↓, → or
+space forward; Page Up, ↑, ← back. A block is the lines a blank line separates in the
+`.cho` (found from layout, so a section name joins the block under it); one taller
+than the screen starts at the top. Past either end of a song it steps to the
+next/previous song in the playlist (`?p=`). `+`/`-`
 size, remembered per song as steps; Esc exits.
 
 With a room set, "Lead (n)" on `index.html` opens a song with `{tempo}` in autoscroll
 and any other in Pages, and a leader already paging stays in Pages. Each turn
 publishes `{view: "pages", song, line}` through `sync.js`, where `line` is the index
-of the top text node, the same on any screen size, so followers put that line at the
-top. A follower's pedal turns its own screen until the leader's next turn; its "Lead"
+of the block's first text node, the same on any screen size, so followers center the
+same block. A follower's pedal turns its own screen until the leader's next turn; its "Lead"
 button takes over. The role (`?role=`) lives in `sync.js`, shared by both views.
 
 ## Autoscroll (stage view)
