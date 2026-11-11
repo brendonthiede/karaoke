@@ -23,8 +23,8 @@
     /* ---------- clock ---------- */
 
     const sync = globalThis.Sync;
-    let role = sync ? new URLSearchParams(location.search).get("role") : null;
-    const leading = () => role === "lead", following = () => role === "stage";
+    const role = () => sync?.role ?? null;
+    const leading = () => role() === "lead", following = () => role() === "stage";
 
     let tl = null;
     // Position is computed from the anchor every frame, never accumulated (plan: "broadcast state").
@@ -97,10 +97,12 @@
     const valid = (st) => Number.isFinite(st.anchor?.relayTime) && Number.isFinite(st.anchor?.beat)
         && Number.isFinite(st.tempoScale ?? 1) && (st.tempoScale ?? 1) > 0 && Array.isArray(st.playlist ?? []);
     function follow(st) {
+        // A leader paging (scripts/pages.js) takes this device out of the stage view.
+        if (st?.view === "pages") return void (on() && leave(false));
         if (!valid(st)) return;
         if (leading()) {
             if (st.from === sync.id) return;   // the relay handing back this tab's state from before a reload
-            setRole("stage");                  // someone took the lead: last writer wins
+            sync.setRole("stage");             // someone took the lead: last writer wins
         }
         if (!following()) return;
         if (st.playlist?.join() !== prefetched) {
@@ -109,6 +111,7 @@
         }
         if (st.song === songName() && tl) {
             clock = fromState(st);
+            show();   // back from pages
             return;
         }
         waiting = st;
@@ -118,16 +121,13 @@
     }
     sync?.onState(follow);
 
-    function setRole(r) {
-        role = r;
-        const q = new URLSearchParams(location.search);
-        q.set("role", r);
-        history.replaceState(null, "", `?${q}`.replace(/%2C/g, ","));
+    function showRole() {
         for (const b of leaderOnly) b.hidden = following();
         takeLead.hidden = !following();
     }
+    document.addEventListener("rolechange", showRole);
     function takeTheLead() {
-        setRole("lead");
+        sync.setRole("lead");
         anchor({});
     }
 
@@ -231,8 +231,8 @@
         text += ` · ${tempo} bpm` + (clock.scale !== 1 ? ` (${clock.scale > 1 ? "+" : ""}${Math.round((clock.scale - 1) * 100)}%)` : "");
         if (atHold(pos)) text += " · Hold";
         else if (!clock.playing) text += " · Paused";
-        if (role) text += leading() ? " · Leading" : " · Following";
-        if (role && sync.enabled && !sync.connected) text += " · reconnecting";
+        if (role()) text += leading() ? " · Leading" : " · Following";
+        if (role() && sync.enabled && !sync.connected) text += " · reconnecting";
         if (label.textContent !== text) label.textContent = text;
         const playing = clock.playing && !atHold(pos);
         if (playButton.textContent !== (playing ? "⏸" : "▶")) playButton.textContent = playing ? "⏸" : "▶";
@@ -258,12 +258,13 @@
         } catch { /* iPadOS: Add to Home Screen instead, see AGENTS.md */ }
     }
 
-    function leave() {
+    // `fullscreen` false when pages.js takes over: it lives in full screen too.
+    function leave(fullscreen = true) {
         document.body.classList.remove("autoscroll");
         song.style.fontSize = "";
         document.dispatchEvent(new Event("songredraw"));
         window.scrollTo(0, 0);
-        if (document.fullscreenElement || document.webkitFullscreenElement) {
+        if (fullscreen && (document.fullscreenElement || document.webkitFullscreenElement)) {
             (document.exitFullscreen ?? document.webkitExitFullscreen).call(document);
         }
     }
@@ -298,10 +299,9 @@
         button("A−", "Smaller", () => zoom(-1)),
         button("A+", "Bigger", () => zoom(1)),
         ...next,
-        button("✕", "Exit autoscroll (Esc)", leave),
+        button("✕", "Exit autoscroll (Esc)", () => leave()),
     );
-    if (role) setRole(role);
-    else takeLead.hidden = true;
+    showRole();
     document.body.append(nowLine, status, count, controls);
 
     const menu = document.querySelector(".pure-menu-list");
@@ -335,7 +335,7 @@
             " ": toggle, ArrowRight: play, PageDown: play, ArrowLeft: pause, PageUp: pause,
             ArrowDown: () => nudge(1), ArrowUp: () => nudge(-1), Home: restart, t: tap,
             "]": () => scaleBy(TEMPO_STEP), "[": () => scaleBy(1 / TEMPO_STEP),
-            "+": () => zoom(1), "=": () => zoom(1), "-": () => zoom(-1), Escape: leave,
+            "+": () => zoom(1), "=": () => zoom(1), "-": () => zoom(-1), Escape: () => leave(),
         };
         if (!keys[e.key] || (following() && !/^[-+=]$|^Escape$/.test(e.key))) return;
         e.preventDefault();
@@ -353,9 +353,10 @@
         tl = e.detail?.timeline ?? null;
         item.hidden = !tl;
         try { steps = Number(localStorage.getItem(sizeKey())) || 0; } catch { steps = 0; }
-        if (role && tl) show();   // leading and following both live in the stage view
+        // Leading and following live in the stage view, unless pages.js has the device.
+        if (role() && tl && !document.body.classList.contains("pages")) show();
         if (!on()) return;
-        if (!tl) return leave();
+        if (!tl) return leave(!role());   // with a role, pages.js takes this chart
         clock = START;
         if (following() && waiting?.song === songName()) {
             clock = fromState(waiting);

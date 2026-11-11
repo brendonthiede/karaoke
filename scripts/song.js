@@ -307,7 +307,7 @@
 
         document.addEventListener("keydown", (e) => {
             if (/^(SELECT|INPUT)$/.test(e.target.tagName)) return;   // the key picker keeps its arrows
-            if (document.body.classList.contains("autoscroll")) return;   // arrows drive the clock there
+            if (document.body.matches(".autoscroll, .pages")) return;   // arrows drive the clock or turn pages there
             if (e.key === "ArrowLeft") go(-1);
             else if (e.key === "ArrowRight") go(1);
             else return;

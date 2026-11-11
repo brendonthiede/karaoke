@@ -87,10 +87,22 @@
     }
     connect();
 
+    // `?role=lead` publishes, `?role=stage` follows, none plays alone. Shared by
+    // autoscroll.js and pages.js; a change fires `rolechange` on document.
+    let role = new URLSearchParams(location.search).get("role");
+
     globalThis.Sync = {
         id,
         room,
         now,
+        get role() { return role; },
+        setRole(r) {
+            role = r;
+            const q = new URLSearchParams(location.search);
+            q.set("role", r);
+            history.replaceState(null, "", `?${q}`.replace(/%2C/g, ","));
+            document.dispatchEvent(new Event("rolechange"));
+        },
         get connected() { return connected; },
         get enabled() { return Boolean(relay && room); },
         publish(state) {

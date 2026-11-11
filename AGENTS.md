@@ -14,7 +14,7 @@ served straight from disk (`python3 -m http.server`, see README).
 | `icons/` | App icons (manifest, iOS home screen), all resized from `source.jpg`; `favicon.ico` is a 32px PNG cropped from it. |
 | `relay/` | Cloudflare Worker that syncs autoscroll between devices. The only non-browser runtime code; dev and deploy with `npx wrangler@4`. |
 | `tools/` | Python converters (see below). Not served — dev-time only. |
-| `scripts/` | Browser JS: `song.js` (`.cho` renderer, repeats, key picker), `timeline.js` + `autoscroll.js` + `sync.js` (stage view and sync, below), `fitscreen.js`, `device.js` (screen wake lock + offline registration; every page loads it), `enableToggleChords.js`. |
+| `scripts/` | Browser JS: `song.js` (`.cho` renderer, repeats, key picker), `timeline.js` + `autoscroll.js` + `sync.js` (stage view and sync, below), `fitscreen.js`, `pages.js` (page-turner view, below), `device.js` (screen wake lock + offline registration; every page loads it), `enableToggleChords.js`. |
 | `*.css` | Pure.css + Font Awesome, vendored. `style.css` is ours. |
 
 ## Adding a song
@@ -126,6 +126,23 @@ It needs `<div id="song">` and finds the header menu itself. The `<meta
 name="apple-mobile-web-app-capable">` tags exist so Add to Home Screen on iOS
 launches chrome-free — iPadOS Safari won't fullscreen a non-video element, so
 that's the only way to actually lose the address bar there.
+
+## Pages (page turner)
+
+`scripts/pages.js` adds a "Pages" link to every `song.html` chart, tempo or not: one
+column, sized so the longest line fills the width, with collapsed repeats opened. A
+pedal (JSP-01 or similar) turns a whole screen per press: Page Down, ↓, → or space
+forward; Page Up, ↑, ← back. The line cut off at the bottom opens the next page, and
+a section name left as a page's last line moves over with its section. Past either
+end of a song it steps to the next/previous song in the playlist (`?p=`). `+`/`-`
+size, remembered per song as steps; Esc exits.
+
+With a room set, "Lead (n)" on `index.html` opens a song with `{tempo}` in autoscroll
+and any other in Pages, and a leader already paging stays in Pages. Each turn
+publishes `{view: "pages", song, line}` through `sync.js`, where `line` is the index
+of the top text node, the same on any screen size, so followers put that line at the
+top. A follower's pedal turns its own screen until the leader's next turn; its "Lead"
+button takes over. The role (`?role=`) lives in `sync.js`, shared by both views.
 
 ## Autoscroll (stage view)
 

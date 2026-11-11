@@ -361,7 +361,8 @@ body.fitscreen #song {
     line-height: 1.7;
 }
 
-#fitscreen-controls {
+#fitscreen-controls,
+#pages-controls {
     display: none;
     position: fixed;
     right: 0.5em;
@@ -370,11 +371,13 @@ body.fitscreen #song {
     z-index: 10;
 }
 
-body.fitscreen #fitscreen-controls {
+body.fitscreen #fitscreen-controls,
+body.pages #pages-controls {
     display: flex;
 }
 
-#fitscreen-controls button {
+#fitscreen-controls button,
+#pages-controls button {
     width: 44px;
     height: 44px;
     padding: 0;
@@ -390,8 +393,35 @@ body.fitscreen #fitscreen-controls {
 
 #fitscreen-controls button:hover,
 #fitscreen-controls button:focus,
-#fitscreen-controls button:active {
+#fitscreen-controls button:active,
+#pages-controls button:hover,
+#pages-controls button:focus,
+#pages-controls button:active {
     opacity: 1;
+}
+
+/*
+ * -- PAGES (PAGE TURNER) STYLES --
+ * See scripts/pages.js. One column; the type size is set from JS.
+ */
+
+body.pages .header {
+    display: none;
+}
+
+body.pages .content {
+    padding: 0 1em;
+}
+
+body.pages #song {
+    column-count: 1;
+    line-height: 1.5;
+}
+
+/* Measuring the longest line for type size: no wrapping while it's measured. */
+#song.pages-measuring,
+#song.pages-measuring pre.chord {
+    white-space: nowrap;
 }
 
 /*

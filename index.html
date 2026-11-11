@@ -473,7 +473,7 @@
     </script>
     <script>
         // Playlist picker: tick .cho songs, Play opens them in tick order (see AGENTS.md).
-        // With a room set, Lead opens them as the autoscroll leader and Follow joins one
+        // With a room set, Lead opens them as the leader (autoscroll or pages) and Follow joins one
         // (docs/autoscroll-plan.md "Roles").
         (() => {
             const picked = [];
@@ -508,20 +508,16 @@
             roomItem.append(room);
             menu.append(roomItem);
 
-            // Lead only makes sense when every ticked song can autoscroll, i.e. has {tempo}.
-            const timed = {};
-            const isTimed = (n) => (timed[n] ??= fetch(`./tabs/${n}.cho`)
-                .then((r) => r.text()).then((t) => /^\{tempo:/m.test(t)).catch(() => false));
-            const update = async () => {
+            const update = () => {
                 play.parentElement.hidden = lead.parentElement.hidden = !picked.length;
                 follow.parentElement.hidden = !room.value;
                 play.textContent = `Play (${picked.length})`;
                 play.href = `./tabs/song.html?s=${picked[0]}&p=${picked.join(",")}`;
                 lead.textContent = `Lead (${picked.length})`;
                 lead.href = `${play.href}&role=lead`;
-                const all = (await Promise.all(picked.map(isTimed))).every(Boolean);
-                lead.classList.toggle("pure-menu-disabled", !room.value || !all);
-                lead.title = !room.value ? "Set a room first" : all ? "Lead these songs in autoscroll" : "Every song needs a {tempo} to lead";
+                // A song with {tempo} autoscrolls, any other pages (scripts/pages.js).
+                lead.classList.toggle("pure-menu-disabled", !room.value);
+                lead.title = room.value ? "Lead these songs on every device in the room" : "Set a room first";
             };
             update();
             for (const row of document.querySelectorAll("tbody tr")) {

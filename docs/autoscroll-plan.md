@@ -149,7 +149,8 @@ to paste into the file. Stored as beats, so the result is the same format.
   `index.html` and kept in `localStorage`. Hashed into the Durable Object id;
   a wrong word lands in an empty room. Followers need it too.
 - **Index links.** "Play (n)" stays as it is and never publishes. A **Lead (n)**
-  link appears once a room is set, greyed until every ticked song has `{tempo}`.
+  link appears once a room is set. A song without `{tempo}` is led in the
+  page-turner view instead (`scripts/pages.js`, AGENTS.md "Pages").
   **Follow** and **House** take no song selection: the song comes from the leader.
 - Followers ignore their own `?s=` once a leader is heard. The projector sits on
   `lyrics.html` for the whole service.

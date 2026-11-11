@@ -231,7 +231,7 @@
 
     document.addEventListener("keydown", (event) => {
         if (!isOn()) {
-            if (event.key === "f" && !document.body.classList.contains("autoscroll")) enter();
+            if (event.key === "f" && !document.body.matches(".autoscroll, .pages")) enter();
             return;
         }
         if (event.key === "+" || event.key === "=") zoom(1);
