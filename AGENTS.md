@@ -143,7 +143,9 @@ keyboard + pointer (the JSP-01; WebKit bug 290779) unless a text field has focus
 Pages and Autoscroll keep a hidden `#pedal` input (`inputmode="none"`) focused. iOS
 only focuses on a tap: entering the view counts, and a follower that the leader
 switched into a view needs one tap on the screen. Key guards that skip `INPUT`
-targets must exempt `#pedal`.
+targets must exempt `#pedal`. A focused field also bounces iPad Safari out of full
+screen, so neither view requests it on iPad, and leaving full screen never closes
+them (only ✕ or Esc does).
 
 With a room set, "Lead (n)" on `index.html` opens a song with `{tempo}` in autoscroll
 and any other in Pages, and a leader already paging stays in Pages. Each turn

@@ -177,10 +177,13 @@
         cur = 0;
         center();
         publish();
+        // Not on iPad: focusing the #pedal field (pages.js) bounces Safari out of full
+        // screen at once. Add to Home Screen is the chrome-free way there, see AGENTS.md.
+        if (/iPad|Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1) return;
         const root = document.documentElement;
         try {
             await (root.requestFullscreen?.() ?? root.webkitRequestFullscreen?.());
-        } catch { /* iPadOS: Add to Home Screen instead, see AGENTS.md */ }
+        } catch { /* refused: the view works without it */ }
     }
     // `fullscreen` false when the stage view takes over: it lives in full screen too.
     function leave(fullscreen = true) {
@@ -246,11 +249,8 @@
         keys[e.key]();
     });
 
-    for (const event of ["fullscreenchange", "webkitfullscreenchange"]) {
-        document.addEventListener(event, () => {
-            if (!(document.fullscreenElement || document.webkitFullscreenElement) && on()) leave();
-        });
-    }
+    // Leaving full screen keeps the view: iPad Safari drops it whenever a field takes
+    // focus, and #pedal always does. ✕ or Esc leaves.
 
     // A new chart (playlist Next/Prev, or the leader's): its own size, from the top.
     // Deferred so autoscroll.js has first claimed or let go of the chart.
